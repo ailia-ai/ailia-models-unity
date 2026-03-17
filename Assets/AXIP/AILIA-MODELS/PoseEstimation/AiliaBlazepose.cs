@@ -1,11 +1,143 @@
-using ailiaSDK;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
 
+using ailiaSDK;
 using ailia;
+
+// Unity and ailia SDK type stubs for non-Unity builds (standalone tests)
+#if !UNITY_2017_1_OR_NEWER
+namespace UnityEngine
+{
+    public class Debug
+    {
+        public static void Log(object text) { System.Console.WriteLine(text); }
+        public static void LogError(object text) { System.Console.WriteLine(text); }
+        public static void LogWarning(object text) { System.Console.WriteLine(text); }
+    }
+
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    public struct Color32
+    {
+        public byte r, g, b, a;
+        public Color32(byte r, byte g, byte b, byte a) { this.r = r; this.g = g; this.b = b; this.a = a; }
+    }
+
+    public struct Vector2
+    {
+        public float x, y;
+        public Vector2(float x, float y) { this.x = x; this.y = y; }
+        public static Vector2 operator *(Vector2 a, float d) => new Vector2(a.x * d, a.y * d);
+        public static Vector2 operator *(float d, Vector2 a) => new Vector2(a.x * d, a.y * d);
+        public static Vector2 operator +(Vector2 a, Vector2 b) => new Vector2(a.x + b.x, a.y + b.y);
+        public static Vector2 operator /(Vector2 a, float d) => new Vector2(a.x / d, a.y / d);
+        public static Vector2 one => new Vector2(1, 1);
+    }
+
+    public struct Vector3
+    {
+        public float x, y, z;
+        public Vector3(float x, float y, float z) { this.x = x; this.y = y; this.z = z; }
+        public static Vector3 operator +(Vector3 a, Vector3 b) => new Vector3(a.x + b.x, a.y + b.y, a.z + b.z);
+        public static Vector3 operator /(Vector3 a, float d) => new Vector3(a.x / d, a.y / d, a.z / d);
+        public static Vector3 zero => new Vector3(0, 0, 0);
+    }
+
+    public static class Mathf
+    {
+        public const float PI = (float)System.Math.PI;
+        public static float Exp(float x) => (float)System.Math.Exp(x);
+        public static float Sqrt(float x) => (float)System.Math.Sqrt(x);
+        public static float Pow(float x, float y) => (float)System.Math.Pow(x, y);
+        public static float Cos(float x) => (float)System.Math.Cos(x);
+        public static float Sin(float x) => (float)System.Math.Sin(x);
+        public static float Atan2(float y, float x) => (float)System.Math.Atan2(y, x);
+        public static float Max(float a, float b) => System.Math.Max(a, b);
+        public static float Min(float a, float b) => System.Math.Min(a, b);
+        public static float Clamp(float value, float min, float max) => System.Math.Max(min, System.Math.Min(max, value));
+    }
+
+    public static class JsonUtility
+    {
+        public static T FromJson<T>(string json) => System.Text.Json.JsonSerializer.Deserialize<T>(json);
+    }
+
+    public static class Shader
+    {
+        public static int PropertyToID(string name) => name.GetHashCode();
+    }
+}
+
+namespace ailiaSDK
+{
+    public class AiliaPoseEstimator
+    {
+        public const int AILIA_POSE_ESTIMATOR_POSE_KEYPOINT_CNT = 19;
+        public const int AILIA_POSE_ESTIMATOR_POSE_KEYPOINT_NOSE = 0;
+        public const int AILIA_POSE_ESTIMATOR_POSE_KEYPOINT_EYE_LEFT = 1;
+        public const int AILIA_POSE_ESTIMATOR_POSE_KEYPOINT_EYE_RIGHT = 2;
+        public const int AILIA_POSE_ESTIMATOR_POSE_KEYPOINT_EAR_LEFT = 3;
+        public const int AILIA_POSE_ESTIMATOR_POSE_KEYPOINT_EAR_RIGHT = 4;
+        public const int AILIA_POSE_ESTIMATOR_POSE_KEYPOINT_SHOULDER_LEFT = 5;
+        public const int AILIA_POSE_ESTIMATOR_POSE_KEYPOINT_SHOULDER_RIGHT = 6;
+        public const int AILIA_POSE_ESTIMATOR_POSE_KEYPOINT_ELBOW_LEFT = 7;
+        public const int AILIA_POSE_ESTIMATOR_POSE_KEYPOINT_ELBOW_RIGHT = 8;
+        public const int AILIA_POSE_ESTIMATOR_POSE_KEYPOINT_WRIST_LEFT = 9;
+        public const int AILIA_POSE_ESTIMATOR_POSE_KEYPOINT_WRIST_RIGHT = 10;
+        public const int AILIA_POSE_ESTIMATOR_POSE_KEYPOINT_HIP_LEFT = 11;
+        public const int AILIA_POSE_ESTIMATOR_POSE_KEYPOINT_HIP_RIGHT = 12;
+        public const int AILIA_POSE_ESTIMATOR_POSE_KEYPOINT_KNEE_LEFT = 13;
+        public const int AILIA_POSE_ESTIMATOR_POSE_KEYPOINT_KNEE_RIGHT = 14;
+        public const int AILIA_POSE_ESTIMATOR_POSE_KEYPOINT_ANKLE_LEFT = 15;
+        public const int AILIA_POSE_ESTIMATOR_POSE_KEYPOINT_ANKLE_RIGHT = 16;
+        public const int AILIA_POSE_ESTIMATOR_POSE_KEYPOINT_SHOULDER_CENTER = 17;
+        public const int AILIA_POSE_ESTIMATOR_POSE_KEYPOINT_BODY_CENTER = 18;
+
+        public struct AILIAPoseEstimatorKeypoint
+        {
+            public float x, y, z_local, score;
+            public int interpolated;
+        }
+
+        public struct AILIAPoseEstimatorObjectPose
+        {
+            public AILIAPoseEstimatorKeypoint[] points;
+            public float total_score;
+        }
+    }
+}
+
+namespace ailia
+{
+    public class Ailia
+    {
+        public struct AILIAShape { public uint x, y, z, w, dim; }
+        public class AILIAEnvironment { public int type, backend; public uint props; }
+        public const int AILIA_ENVIRONMENT_TYPE_GPU = 2;
+        public const uint AILIA_ENVIRONMENT_PROPERTY_FP16 = 1;
+        public const int AILIA_ENVIRONMENT_BACKEND_CUDA = 1;
+        public const int AILIA_ENVIRONMENT_BACKEND_VULKAN = 2;
+    }
+
+    public class AiliaModel
+    {
+        public bool OpenFile(string prototxt, string model) => true;
+        public int GetEnvironmentCount() => 0;
+        public Ailia.AILIAEnvironment GetEnvironment(int i) => null;
+        public bool SelectEnvironment(int i) => true;
+        public int FindBlobIndexByName(string name) => 0;
+        public bool SetInputBlobShape(Ailia.AILIAShape shape, int idx) => true;
+        public bool SetInputBlobData(float[] data, int idx) => true;
+        public bool Update() => true;
+        public bool GetBlobData(float[] data, int idx) => true;
+        public string GetErrorDetail() => "";
+        public void Close() { }
+        public string EnvironmentName() => "stub";
+    }
+}
+#endif
 
 struct Box
 {
@@ -137,7 +269,9 @@ public enum BodyPartIndex
 
 public class AiliaBlazepose : IDisposable
 {
+#if UNITY_2017_1_OR_NEWER
     public ComputeShader computeShader = null;
+#endif
 
     private AiliaModel ailiaPoseDetection = new AiliaModel();
     private AiliaModel ailiaPoseEstimation = new AiliaModel();
@@ -150,12 +284,13 @@ public class AiliaBlazepose : IDisposable
     private static readonly float BLAZEPOSE_DETECTOR_RAW_SCORE_THRESHOLD = 100;
     private static readonly float BLAZEPOSE_DETECTOR_MINIMUM_SCORE_THRESHOLD = 0.5f;
     private static readonly float BLAZEPOSE_DETECTOR_MINIMUM_OVERLAP_THRESHOLD = 0.3f;
-    private float[,] anchors;
+    internal float[,] anchors;
 
     private static readonly int BLAZEPOSE_ESTIMATOR_INPUT_RESOLUTION = 256;
     private static readonly int BLAZEPOSE_ESTIMATOR_TENSOR_COUNT = 1;
     private static readonly int BLAZEPOSE_ESTIMATOR_TENSOR_SIZE = 195;
 
+#if UNITY_2017_1_OR_NEWER
     int kernelIndex = -1;
     int ID_InputTexture = Shader.PropertyToID("InputTexture");
     int ID_InputWidth = Shader.PropertyToID("InputWidth");
@@ -165,6 +300,7 @@ public class AiliaBlazepose : IDisposable
     int ID_OutputHeight = Shader.PropertyToID("OutputHeight");
     int ID_Matrix = Shader.PropertyToID("Matrix");
     int ID_BackgroundColor = Shader.PropertyToID("BackgroundColor");
+#endif
 
     struct JsonFloatArray
     {
@@ -257,11 +393,24 @@ public class AiliaBlazepose : IDisposable
         estimationOutputBuffer = new float[BLAZEPOSE_ESTIMATOR_TENSOR_COUNT * BLAZEPOSE_ESTIMATOR_TENSOR_SIZE];
     }
 
-    private float[] inputArray;
-    private float[] rawBoxesOutput;
-    private float[] rawScoresOutput;
-    private List<Box> boxes;
+    // Internal constructor for unit testing (no model loading)
+    internal AiliaBlazepose()
+    {
+        inputArray = new float[BLAZEPOSE_DETECTOR_INPUT_RESOLUTION * BLAZEPOSE_DETECTOR_INPUT_RESOLUTION * BLAZEPOSE_DETECTOR_INPUT_CHANNEL_COUNT];
+        rawBoxesOutput = new float[BLAZEPOSE_DETECTOR_TENSOR_COUNT * BLAZEPOSE_DETECTOR_TENSOR_SIZE];
+        rawScoresOutput = new float[BLAZEPOSE_DETECTOR_TENSOR_COUNT];
+        estimationScoreBuffer = new float[1];
+        estimationInputArray = new float[BLAZEPOSE_ESTIMATOR_INPUT_RESOLUTION * BLAZEPOSE_ESTIMATOR_INPUT_RESOLUTION * BLAZEPOSE_DETECTOR_INPUT_CHANNEL_COUNT];
+        estimationOutputBuffer = new float[BLAZEPOSE_ESTIMATOR_TENSOR_COUNT * BLAZEPOSE_ESTIMATOR_TENSOR_SIZE];
+        anchors = new float[BLAZEPOSE_DETECTOR_TENSOR_COUNT, 4];
+    }
+
+    internal float[] inputArray;
+    internal float[] rawBoxesOutput;
+    internal float[] rawScoresOutput;
+    internal List<Box> boxes;
     private Box? poseDetectionBox;
+#if UNITY_2017_1_OR_NEWER
     RenderTexture preprocessBuffer;
     private void PreprocessTexture(Texture2D texture)
     {
@@ -287,14 +436,16 @@ public class AiliaBlazepose : IDisposable
 			}
         }
     }
+#endif
 
-    private uint estimationInputWidth;
-    private uint estimationInputHeight;
-    private float[] estimationInputArray;
-    private float[] estimationOutputBuffer;
-    float[] estimationScoreBuffer;
+    internal uint estimationInputWidth;
+    internal uint estimationInputHeight;
+    internal float[] estimationInputArray;
+    internal float[] estimationOutputBuffer;
+    internal float[] estimationScoreBuffer;
     public List<Landmark> landmarks = new List<Landmark>();
 
+#if UNITY_2017_1_OR_NEWER
     private void PreprocessTextureEstimation(Texture2D texture)
     {
         estimationInputWidth = ((uint)texture.width);
@@ -316,14 +467,16 @@ public class AiliaBlazepose : IDisposable
             }
         }
     }
+#endif
 
-    private float affine_xc=0;
-    private float affine_yc=0;
-    private float affine_x1=0;
-    private float affine_y1=0;
-    private float affine_scale=0;
-    private float affine_angle=0;
+    internal float affine_xc=0;
+    internal float affine_yc=0;
+    internal float affine_x1=0;
+    internal float affine_y1=0;
+    internal float affine_scale=0;
+    internal float affine_angle=0;
 
+#if UNITY_2017_1_OR_NEWER
     private Texture2D ExtractROIFromBox(Texture2D texture, Box box)
     {
         float finalSquareLength = Mathf.Max(texture.width, texture.height);
@@ -446,7 +599,9 @@ public class AiliaBlazepose : IDisposable
         RenderTexture.active = org;
         return output;
     }
+#endif
 
+#if UNITY_2017_1_OR_NEWER
      Texture2D input_texture=null;
 
     public List<AiliaPoseEstimator.AILIAPoseEstimatorObjectPose> RunPoseEstimation(Color32 [] camera, int tex_width, int tex_height)
@@ -468,7 +623,9 @@ public class AiliaBlazepose : IDisposable
 
         return GetResult();
     }
+#endif
 
+#if UNITY_2017_1_OR_NEWER
     private Texture2D RunDetectionModel(Texture2D inputTexture)
     {
         bool status;
@@ -544,6 +701,7 @@ public class AiliaBlazepose : IDisposable
 
     private void RunEstimationModel(Texture2D inputTexture)
     {
+
 		bool status;
 		PreprocessTextureEstimation(inputTexture);
 
@@ -601,13 +759,14 @@ public class AiliaBlazepose : IDisposable
 
         DecodeAndProcessLandmarks();
     }
+#endif
 
-    private float Sigmoid(float x)
+    internal float Sigmoid(float x)
     {
         return 1.0f / (1.0f + Mathf.Exp(-x));
     }
 
-    private void DecodeAndProcessBoxes()
+    internal void DecodeAndProcessBoxes()
     {
         List<Box> remainingBoxes = new List<Box>();
         boxes = new List<Box>();
@@ -680,7 +839,7 @@ public class AiliaBlazepose : IDisposable
         }
     }
 
-    private void DecodeAndProcessLandmarks()
+    internal void DecodeAndProcessLandmarks()
     {
         landmarks = new List<Landmark>();
 
@@ -767,8 +926,10 @@ public class AiliaBlazepose : IDisposable
             ailiaPoseEstimation.Close();
             ailiaPoseDetection = null;
             ailiaPoseEstimation = null;
+#if UNITY_2017_1_OR_NEWER
             computeTexture?.Release();
             preprocessBuffer?.Release();
+#endif
 
             disposedValue = true;
         }
