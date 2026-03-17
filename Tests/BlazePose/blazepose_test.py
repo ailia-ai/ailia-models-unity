@@ -2,13 +2,13 @@
 BlazePose Fullbody Python inference test.
 
 This test downloads the pose_landmark_heavy.onnx model and runs inference
-using onnxruntime, verifying the output shapes and basic properties.
+using ailia SDK, verifying the output shapes and basic properties.
 
 Python reference: blazepose-fullbody/blazepose-fullbody.py
 Model: pose_landmark_heavy (NHWC input [1,256,256,3])
 
 Requirements:
-    pip install numpy onnxruntime requests pytest
+    pip install numpy ailia pytest
 """
 
 import os
@@ -17,17 +17,25 @@ import urllib.request
 import numpy as np
 import pytest
 
-MODEL_URL = "https://storage.googleapis.com/ailia-models/blazepose-fullbody/pose_landmark_heavy.onnx"
-DETECTION_MODEL_URL = "https://storage.googleapis.com/ailia-models/blazepose-fullbody/pose_detection.onnx"
+MODEL_BASE_URL = "https://storage.googleapis.com/ailia-models/blazepose-fullbody"
 CACHE_DIR = os.path.join(os.path.dirname(__file__), ".cache")
 
+ESTIMATION_FILES = [
+    "pose_landmark_heavy.onnx",
+    "pose_landmark_heavy.onnx.prototxt",
+]
+DETECTION_FILES = [
+    "pose_detection.onnx",
+    "pose_detection.onnx.prototxt",
+]
 
-def download_model(url, cache_dir=CACHE_DIR):
+
+def download_model(filename, cache_dir=CACHE_DIR):
     """Download model if not cached."""
     os.makedirs(cache_dir, exist_ok=True)
-    filename = os.path.basename(url)
     filepath = os.path.join(cache_dir, filename)
     if not os.path.exists(filepath):
+        url = f"{MODEL_BASE_URL}/{filename}"
         print(f"Downloading {filename}...")
         urllib.request.urlretrieve(url, filepath)
     return filepath
@@ -133,28 +141,27 @@ class TestLandmarkDecoding:
 
 
 # =======================================================
-# 4. Model inference tests (require onnxruntime)
+# 4. Model inference tests (require ailia SDK)
 # =======================================================
 class TestEstimationModelInference:
     @pytest.fixture(autouse=True)
     def setup(self):
         try:
-            import onnxruntime
-            self.ort = onnxruntime
+            import ailia
+            self.ailia = ailia
         except ImportError:
-            pytest.skip("onnxruntime not installed")
+            pytest.skip("ailia SDK not installed")
 
     def test_estimation_model_output_shapes(self):
-        """Verify pose_landmark_heavy model output shapes."""
-        model_path = download_model(MODEL_URL)
-        session = self.ort.InferenceSession(model_path)
+        """Verify pose_landmark_heavy model output shapes using ailia predict API."""
+        onnx_path = download_model("pose_landmark_heavy.onnx")
+        proto_path = download_model("pose_landmark_heavy.onnx.prototxt")
+
+        net = self.ailia.Net(proto_path, onnx_path)
 
         # NHWC input: [1, 256, 256, 3]
         input_data = np.random.rand(1, 256, 256, 3).astype(np.float32)
-        input_name = session.get_inputs()[0].name
-        assert input_name == "input_1"
-
-        outputs = session.run(None, {input_name: input_data})
+        outputs = net.predict([input_data])
 
         # 5 outputs: Identity[1,195], Identity_1[1,1], Identity_2[1,128,128,1],
         #            Identity_3[1,64,64,39], Identity_4[1,117]
@@ -167,12 +174,14 @@ class TestEstimationModelInference:
 
     def test_estimation_model_landmark_range(self):
         """Verify landmarks are in reasonable range for a valid input."""
-        model_path = download_model(MODEL_URL)
-        session = self.ort.InferenceSession(model_path)
+        onnx_path = download_model("pose_landmark_heavy.onnx")
+        proto_path = download_model("pose_landmark_heavy.onnx.prototxt")
+
+        net = self.ailia.Net(proto_path, onnx_path)
 
         # Create a simple test image (gray)
         input_data = np.full((1, 256, 256, 3), 0.5, dtype=np.float32)
-        outputs = session.run(None, {"input_1": input_data})
+        outputs = net.predict([input_data])
 
         landmarks = outputs[0][0]  # [195]
         # 33 landmarks * 5 = 165, remaining 30 are auxiliary
@@ -183,39 +192,61 @@ class TestEstimationModelInference:
             assert -256 < x < 512, f"Landmark {i} x={x} out of range"
             assert -256 < y < 512, f"Landmark {i} y={y} out of range"
 
-    def test_estimation_model_predict_api(self):
-        """Test using predict-style API (single run, all outputs)."""
-        model_path = download_model(MODEL_URL)
-        session = self.ort.InferenceSession(model_path)
+    def test_estimation_model_blob_api(self):
+        """Test using blob API (same path as C# AiliaBlazepose.RunEstimationModel)."""
+        onnx_path = download_model("pose_landmark_heavy.onnx")
+        proto_path = download_model("pose_landmark_heavy.onnx.prototxt")
 
-        input_data = np.random.rand(1, 256, 256, 3).astype(np.float32) / 255.0
-        outputs = session.run(None, {"input_1": input_data})
+        net = self.ailia.Net(proto_path, onnx_path)
 
-        # Score output (Identity_1) should be a single value
-        score = sigmoid(outputs[1][0, 0])
-        assert 0 <= score <= 1, f"Score {score} out of range"
+        # Use blob API like C#
+        input_idx = net.find_blob_index_by_name("input_1")
+        assert input_idx >= 0
+
+        # NHWC shape: x=3, y=256, z=256, w=1
+        net.set_input_blob_shape(
+            self.ailia.Shape4D(3, 256, 256, 1), input_idx
+        )
+
+        input_data = np.full((1, 256, 256, 3), 0.5, dtype=np.float32).flatten()
+        net.set_input_blob_data(input_data, input_idx)
+
+        net.update()
+
+        # Get outputs
+        score_idx = net.find_blob_index_by_name("Identity_1")
+        landmark_idx = net.find_blob_index_by_name("Identity")
+
+        score = net.get_blob_data(score_idx)
+        landmarks = net.get_blob_data(landmark_idx)
+
+        assert score is not None
+        assert landmarks is not None
+
+        pose_score = sigmoid(score.flatten()[0])
+        print(f"Pose score: {pose_score:.4f}")
+        assert 0 <= pose_score <= 1
 
 
 class TestDetectionModelInference:
     @pytest.fixture(autouse=True)
     def setup(self):
         try:
-            import onnxruntime
-            self.ort = onnxruntime
+            import ailia
+            self.ailia = ailia
         except ImportError:
-            pytest.skip("onnxruntime not installed")
+            pytest.skip("ailia SDK not installed")
 
     def test_detection_model_output_shapes(self):
-        """Verify pose_detection model output shapes."""
-        model_path = download_model(DETECTION_MODEL_URL)
-        session = self.ort.InferenceSession(model_path)
+        """Verify pose_detection model output shapes using ailia predict API."""
+        onnx_path = download_model("pose_detection.onnx")
+        proto_path = download_model("pose_detection.onnx.prototxt")
+
+        net = self.ailia.Net(proto_path, onnx_path)
 
         # NHWC input: [1, 224, 224, 3]
         input_data = np.random.rand(1, 224, 224, 3).astype(np.float32)
-        input_name = session.get_inputs()[0].name
-        assert input_name == "input_1"
-
-        outputs = session.run(None, {input_name: input_data})
+        outputs = net.predict([input_data])
 
         # 2 outputs: Identity[1,2254,12], Identity_1[1,2254,1]
         assert len(outputs) == 2

@@ -27,4 +27,12 @@
     <Compile Include="../../Assets/AXIP/AILIA-MODELS/PoseEstimation/AiliaBlazepose.cs" Link="Shared/AiliaBlazepose.cs" />
   </ItemGroup>
 
+  <!-- ailia SDK wrapper files (from ailia-csharp repo) -->
+  <ItemGroup>
+    <Compile Include="/tmp/ailia-csharp/ailia-csharp/ailia-csharp/ailia/ailia-sdk-unity/Runtime/Api/Ailia.cs" Link="AiliaSDK/Ailia.cs" />
+    <Compile Include="/tmp/ailia-csharp/ailia-csharp/ailia-csharp/ailia/ailia-sdk-unity/Runtime/Api/AiliaPoseEstimator.cs" Link="AiliaSDK/AiliaPoseEstimator.cs" />
+    <Compile Include="/tmp/ailia-csharp/ailia-csharp/ailia-csharp/ailia/ailia-sdk-unity/Runtime/Models/AiliaModel.cs" Link="AiliaSDK/AiliaModel.cs" />
+    <Compile Include="/tmp/ailia-csharp/ailia-csharp/ailia-csharp/ailia/ailia-sdk-unity/Runtime/Models/AiliaLicense.cs" Link="AiliaSDK/AiliaLicense.cs" />
+  </ItemGroup>
+
 </Project>
