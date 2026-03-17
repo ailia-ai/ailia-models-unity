@@ -16,6 +16,8 @@ using NUnit.Framework;
 using System;
 using System.IO;
 using System.Net;
+using System.Net.Http;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using ailia;
 
@@ -39,6 +41,78 @@ public class BlazePoseInferenceTest
     public void SetUp()
     {
         Directory.CreateDirectory(MODEL_DIR);
+        CheckAndDownloadLicense();
+    }
+
+    private static void CheckAndDownloadLicense()
+    {
+        string homePath = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
+        if (string.IsNullOrEmpty(homePath))
+            homePath = Environment.GetEnvironmentVariable("HOME") ?? "";
+        string licFolder;
+        if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
+                System.Runtime.InteropServices.OSPlatform.Windows))
+        {
+            licFolder = Environment.CurrentDirectory;
+        }
+        else if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
+                     System.Runtime.InteropServices.OSPlatform.OSX))
+        {
+            licFolder = Path.Combine(homePath, "Library/SHALO/");
+        }
+        else
+        {
+            licFolder = Path.Combine(homePath, ".shalo/");
+        }
+
+        string licFile = Path.Combine(licFolder, "AILIA.lic");
+        if (IsLicenseValid(licFile))
+            return;
+
+        Console.WriteLine("Downloading license file for ailia SDK...");
+        Directory.CreateDirectory(licFolder);
+        try
+        {
+            using var httpClient = new HttpClient();
+            httpClient.BaseAddress = new Uri("https://axip-console.appspot.com");
+            HttpResponseMessage response = httpClient.GetAsync("/license/download/product/AILIA").Result;
+            if (response.IsSuccessStatusCode)
+            {
+                byte[] licenseFile = response.Content.ReadAsByteArrayAsync().Result;
+                File.WriteAllBytes(licFile, licenseFile);
+                Console.WriteLine($"License saved to {licFile}");
+            }
+            else
+            {
+                Console.WriteLine($"License download failed: HTTP {response.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"License download failed: {ex.Message}");
+        }
+    }
+
+    private static bool IsLicenseValid(string licPath)
+    {
+        if (!File.Exists(licPath))
+            return false;
+
+        string content = File.ReadAllText(licPath).Replace("\r\n", "\n");
+        string header = "--- shalo license file ---\naxell:ailia\n";
+        if (!content.StartsWith(header))
+            return false;
+
+        string[] lines = content.Split('\n');
+        Match match = Regex.Match(lines[2], @"(\d{4})/(\d{2})/(\d{2})");
+        if (!match.Success)
+            return false;
+
+        DateTime expiryDate = new DateTime(
+            int.Parse(match.Groups[1].Value),
+            int.Parse(match.Groups[2].Value),
+            int.Parse(match.Groups[3].Value), 23, 59, 59);
+        return DateTime.Now <= expiryDate;
     }
 
     private void DownloadIfMissing(string filename)
