@@ -549,24 +549,6 @@ public class AiliaBlazepose : IDisposable
 
         int inputBlobIndex = ailiaPoseEstimation.FindBlobIndexByName("input_1");
 
-        status = ailiaPoseEstimation.SetInputBlobShape(
-            new Ailia.AILIAShape
-            {
-                x = (uint)BLAZEPOSE_DETECTOR_INPUT_CHANNEL_COUNT,
-                y = (uint)BLAZEPOSE_ESTIMATOR_INPUT_RESOLUTION,
-                z = (uint)BLAZEPOSE_ESTIMATOR_INPUT_RESOLUTION,
-                w = 1,
-                dim = 4
-            },
-            inputBlobIndex
-        );
-
-        if (status == false)
-        {
-            Debug.LogError("Could not set input blob shape");
-            Debug.LogError(ailiaPoseEstimation.GetErrorDetail());
-        }
-
         status = ailiaPoseEstimation.SetInputBlobData(estimationInputArray, inputBlobIndex);
         if (status == false)
         {
@@ -577,7 +559,8 @@ public class AiliaBlazepose : IDisposable
         status = ailiaPoseEstimation.Update();
         if (status == false)
         {
-            Debug.Log(ailiaPoseEstimation.GetErrorDetail());
+            Debug.LogError(ailiaPoseEstimation.GetErrorDetail());
+            return;
         }
 
         int outputBlobIndex = ailiaPoseEstimation.FindBlobIndexByName("Identity_1");
