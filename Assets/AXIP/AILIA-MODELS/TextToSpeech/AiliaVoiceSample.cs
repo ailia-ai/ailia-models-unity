@@ -157,6 +157,8 @@ public class AiliaVoiceSample : MonoBehaviour
 				urlList.Add(new ModelDownloadURL() { folder_path = "g2pw/1.1", file_name = "g2pW.onnx" });
 				urlList.Add(new ModelDownloadURL() { folder_path = "g2pw/1.1", file_name = "POLYPHONIC_CHARS.txt" });
 				urlList.Add(new ModelDownloadURL() { folder_path = "g2pw/1.1", file_name = "bopomofo_to_pinyin_wo_tune_dict.json" });
+				urlList.Add(new ModelDownloadURL() { folder_path = "g2pw/gpt-sovits", file_name = "polyphonic.rep" });
+				urlList.Add(new ModelDownloadURL() { folder_path = "g2pw/gpt-sovits", file_name = "polyphonic-fix.rep" });
 			}
 		}
 		if (modelType == TextToSpeechSampleModels.tacotron2_english){
