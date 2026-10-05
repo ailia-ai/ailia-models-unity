@@ -115,29 +115,30 @@ namespace ailiaSDK
 			{
 				llm = new AiliaLLMModel();
 				llm.Create();
+				uint contextSize = (uint)Math.Max(1, n_ctx);
 				if (modelType == LargeLanguageModelSampleModels.gemma2_2b){
-					modelPrepared = llm.Open(asset_path + "/gemma-2-2b-it-Q4_K_M.gguf", n_ctx);
+					modelPrepared = llm.Open(asset_path + "/gemma-2-2b-it-Q4_K_M.gguf", contextSize);
 				}
 				if (modelType == LargeLanguageModelSampleModels.gemma3_1b){
-					modelPrepared = llm.Open(asset_path + "/gemma-3-1b-it-Q4_K_M.gguf", n_ctx);
+					modelPrepared = llm.Open(asset_path + "/gemma-3-1b-it-Q4_K_M.gguf", contextSize);
 				}
 				if (modelType == LargeLanguageModelSampleModels.gemma3_4b){
-					modelPrepared = llm.Open(asset_path + "/gemma-3-4b-it-Q4_K_M.gguf", n_ctx);
+					modelPrepared = llm.Open(asset_path + "/gemma-3-4b-it-Q4_K_M.gguf", contextSize);
 				}
 				if (modelType == LargeLanguageModelSampleModels.gemma3n_E2B){
-					modelPrepared = llm.Open(asset_path + "/gemma-3n-E2B-it-Q4_K_M.gguf", n_ctx);
+					modelPrepared = llm.Open(asset_path + "/gemma-3n-E2B-it-Q4_K_M.gguf", contextSize);
 				}
 				if (modelType == LargeLanguageModelSampleModels.gemma3n_E4B){
-					modelPrepared = llm.Open(asset_path + "/gemma-3n-E4B-it-Q4_K_M.gguf", n_ctx);
+					modelPrepared = llm.Open(asset_path + "/gemma-3n-E4B-it-Q4_K_M.gguf", contextSize);
 				}
 				if (modelType == LargeLanguageModelSampleModels.gemma4_E2B){
-					modelPrepared = llm.Open(asset_path + "/gemma-4-E2B-it-Q4_K_M.gguf", n_ctx);
+					modelPrepared = llm.Open(asset_path + "/gemma-4-E2B-it-Q4_K_M.gguf", contextSize);
 				}
 				if (modelType == LargeLanguageModelSampleModels.gemma4_E4B){
-					modelPrepared = llm.Open(asset_path + "/gemma-4-E4B-it-Q4_K_M.gguf", n_ctx);
+					modelPrepared = llm.Open(asset_path + "/gemma-4-E4B-it-Q4_K_M.gguf", contextSize);
 				}
 				if (modelType == LargeLanguageModelSampleModels.llama3_2_3b){
-					modelPrepared = llm.Open(asset_path + "/Llama-3.2-3B-Instruct-Q4_K_M.gguf", n_ctx);
+					modelPrepared = llm.Open(asset_path + "/Llama-3.2-3B-Instruct-Q4_K_M.gguf", contextSize);
 				}
 				if (modelPrepared == false){
 					Debug.Log("ailiaModel.OpenFile failed");
