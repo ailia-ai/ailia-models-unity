@@ -15,7 +15,7 @@ This folder demonstrates running quantized GGUF LLMs locally. The scene is `Larg
 
 ## Script Behavior
 
-- Downloads a `.gguf` model to `Application.temporaryCachePath` and opens it with `AiliaLLMModel`.
+- Downloads a `.gguf` model to `Application.temporaryCachePath` and opens it with `AiliaLLMModel` using `n_ctx` (8192 by default).
 - Maintains chat history (`AiliaLLMChatMessage`), sets a system prompt, and streams tokens via `Generate()` while updating UI.
 - Handles context reset when `ContextFull()` is true.
 
@@ -23,7 +23,7 @@ This folder demonstrates running quantized GGUF LLMs locally. The scene is `Larg
 
 - Initialize:
   - `var llm = new AiliaLLMModel(); llm.Create();`
-  - `llm.Open(pathToGguf);`
+  - `llm.Open(pathToGguf, 8192);`
 - Chat:
   - Maintain `List<AiliaLLMChatMessage>` for system/user/assistant turns.
   - `llm.SetPrompt(messages);` then loop `llm.Generate(ref done)` and append `llm.GetDeltaText()`.
@@ -31,4 +31,3 @@ This folder demonstrates running quantized GGUF LLMs locally. The scene is `Larg
 ## Source Links
 
 - Controller: `./AiliaLargeLanguageModelSample.cs`
-
